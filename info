@@ -1,3 +1,45 @@
 https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/field-tips-for-aks-storage-provisioning/3761105
 
 https://stackoverflow.com/questions/78981524/use-managed-identity-to-access-storage-account-with-persistent-volume-in-aks
+
+
+
+What is NFS?
+NFS (Network File System) is a protocol that allows multiple systems to access and share files over a network as if they were on a local disk. It’s often used in Linux/UNIX environments for shared file storage.
+
+Key characteristics of NFS:
+
+Supports file locking (to prevent conflicts when multiple clients access the same file).
+
+Performs metadata operations (like checking file ownership, permissions, timestamps) in real time.
+
+Relies on synchronous operations — meaning clients expect immediate confirmation from the storage backend.
+
+📌 What is GRS/ZGRS (Geo-Redundant Storage)?
+GRS/ZGRS replicates your data asynchronously to another Azure region for disaster recovery.
+
+It ensures durability and availability in case of regional failures.
+
+However, the replication is eventual — meaning there's a delay before the remote region has the latest changes.
+
+❌ Why NFS Is Not Compatible with GRS/ZGRS
+Here’s the conflict:
+
+
+NFS Needs	GRS/ZGRS Behavior	Why They Clash
+Synchronous response	Asynchronous replication	NFS expects immediate acknowledgment; GRS can’t provide this.
+Real-time metadata updates	Eventual consistency	NFS requires up-to-date file metadata, which GRS might lag in syncing.
+File locking	No real-time coordination	GRS can’t synchronize locks across regions in real time.
+🔧 Example Scenario
+Imagine two users from different locations accessing the same file on an NFS share:
+
+User A locks the file to edit it.
+
+That lock must be immediately recognized by the system.
+
+With GRS, the secondary region may not reflect that lock instantly.
+
+If another user (from a failover or replicated region) accesses the file, the lock may not exist there yet — leading to data corruption or conflicts.
+
+✅ That's why:
+Azure disables GRS/ZGRS for NFS — to protect the integrity of file operations and avoid inconsistent or conflicting access in a geo-redundant setup.
